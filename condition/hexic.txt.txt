@@ -1,0 +1,173 @@
+Hexic
+-----
+
+Task: Implement parts of Hexic in any programming language.
+
+Evaluation criteria:
+
+1) The program must work correctly.
+
+2) The code has to be simple and easy to maintain - we are not
+interested in architectural astronauts, with lots of abstraction or
+other complicated design patterns.
+   Do not write the code for future extensibility. Instead, write the
+code to solve the task at hand in the simplest and best way and to be as
+readable as possible. A short, but readable program is better than a
+long and general one.
+
+Please report how much time you spent, and an approximate breakdown of what 
+this time was spent for.
+
+
+
+See this site for an implementation:
+
+http://zone.msn.com/en/hexic/default.htm
+
+Hexic takes place on a hexagonal board of 85 cells:
+
+   _   _   _   _   _
+ _/ \_/ \_/ \_/ \_/ \
+/ \_/ \_/ \_/ \_/ \_/
+\_/ \_/ \_/ \_/ \_/ \
+/ \_/ \_/ \_/ \_/ \_/
+\_/ \_/ \_/ \_/ \_/ \
+/ \_/ \_/ \_/ \_/ \_/
+\_/ \_/ \_/ \_/ \_/ \
+/ \_/ \_/ \_/ \_/ \_/
+\_/ \_/ \_/ \_/ \_/ \
+/ \_/ \_/ \_/ \_/ \_/
+\_/ \_/ \_/ \_/ \_/ \
+/ \_/ \_/ \_/ \_/ \_/
+\_/ \_/ \_/ \_/ \_/ \
+/ \_/ \_/ \_/ \_/ \_/
+\_/ \_/ \_/ \_/ \_/ \
+/ \_/ \_/ \_/ \_/ \_/
+\_/ \_/ \_/ \_/ \_/ \
+  \_/ \_/ \_/ \_/ \_/
+
+Each cell has a value (in the real game designated by colors):
+
+   _   _
+ _/2\_/3\_
+/1\_/2\_/1\
+\_/3\_/3\_/
+/3\_/2\_/1\
+\_/ \_/ \_/
+
+
+The aim is to rotate clusters of three cells around the
+point they have in common.
+
+So, if you have this:
+   _   _
+ _/2\_/.\_
+/1\_/.\_/.\
+\_/3\_/.\_/
+/.\_/.\_/.\
+\_/ \_/ \_/
+
+
+and we rotate clock-wise around the point where 1, 2 and 3 touch, we
+get:
+
+   _   _
+ _/1\_/.\_
+/3\_/.\_/.\
+\_/2\_/.\_/
+/.\_/.\_/.\
+\_/ \_/ \_/
+
+You can rotate a second time, and you get:
+
+   _   _
+ _/3\_/.\_
+/2\_/.\_/.\
+\_/1\_/.\_/
+/.\_/.\_/.\
+\_/ \_/ \_/
+
+
+The aim of the game is to build clusters such that 3 cells
+of the same value have a point in common. Here, there is
+a cluster of 2s (where a and b designate some other values than 2):
+
+     _
+   _/b\_
+ _/a\_/.\_
+/.\_/2\_/.\
+\_/2\_/.\_/
+/.\_/2\_/.\
+\_/ \_/ \_/
+
+When this happens, the cells are cleared, and the cells above
+fall down (like in tetris), and new cells (here, c, d and e)
+appear:
+
+     _
+   _/b\_
+ _/a\_/.\_
+/.\_/ \_/.\   (This step is just to illustrate the implicit steps)
+\_/ \_/.\_/
+/.\_/ \_/.\
+\_/ \_/ \_/
+
+     _
+   _/d\_
+ _/c\_/.\_
+/.\_/b\_/.\   (This step is just to illustrate the implicit steps)
+\_/a\_/.\_/
+/.\_/ \_/.\
+\_/ \_/ \_/
+
+     _
+   _/e\_
+ _/c\_/.\_
+/.\_/d\_/.\   (This is the result of the rotation)
+\_/a\_/.\_/
+/.\_/b\_/.\
+\_/ \_/ \_/
+
+
+This gives us 3 points, because 3 cells where removed.
+
+When this happens, new clusters might form, which then are removed,
+and thus we iterate until there are no more clusters.
+
+Notice that a cluster of 4 (or more) might be formed:
+
+     _
+   _/b\_
+ _/a\_/c\_
+/.\_/2\_/.\
+\_/2\_/2\_/
+/.\_/2\_/.\
+\_/ \_/ \_/
+
+
+In this case, all 4 cells are cleared in the same iteration, and we
+get 3*3 = 9 points. If 5 cells are cleared in the same move, we get
+3*3*3 = 27 points, and so on.
+
+If a drop results in more than one cluster to be formed, *all* clusters
+are removed at the same time in this iteration, before new values fall down.
+
+The aim of the game is to remove as many clusters a possible.
+The bigger clusters, the more points you make. The total number of
+points of a rotation is the sum of points obtained from each iteration.
+
+The game ends if there are no places where you can build a new
+cluster.
+
+In the real hexic game, there are more rules, but for this task, we
+only need the above rules.
+
+The task is to implement a program which fills a board with random
+values, somehow making sure that there are no clusters. Print this board
+on the console, using ASCII graphics like the above.
+
+Then it should find the point to rotate around which gives the maximum
+points in total. Do this rotation, print the resulting board along with
+the summed score up till now.
+
+Repeat this until no rotations are possible, and the program ends.
