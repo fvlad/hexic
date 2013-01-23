@@ -14,6 +14,7 @@ class HexicTable(val rows: Int, val columns: Int, numOfColors: Int) {
 
   val rand = new Random()
 
+  //TODO: make sure there are no one color clusters right after init
   val table = Array.tabulate[Int](rows, columns)((_, _) => rand.nextInt(numOfColors))
 
   def apply(row: Int, column: Int): Int = table(row - 1)(column - 1)
@@ -24,25 +25,25 @@ class HexicTable(val rows: Int, val columns: Int, numOfColors: Int) {
 
   def belongs(point: Point) = (1 to rows).contains(point.row) && (1 to columns).contains(point.column)
 
-  def clustersFor(point: Point) = {
+  def clustersFor(point: Point): Set[Cluster] = {
     if (!belongs(point)){
-      throw new IllegalArgumentException("Point doesn't belong the board.")
+      throw new IllegalArgumentException("%s doesn't belong the board.".format(point))
     }
 
-    (for {
-      neighbor <- point.neighbors.filter(belongs)
-      neighborOfNeighbor <- neighbor.neighbors.filter(belongs)
+    for {
+      neighbor <- point.neighbors filter belongs
+      neighborOfNeighbor <- neighbor.neighbors filter belongs
       if (neighborOfNeighbor isNeighbor point)
-    } yield Cluster(Set(point, neighbor, neighborOfNeighbor))).toSet
+    } yield Cluster(Set(point, neighbor, neighborOfNeighbor))
   }
 
   def sameColor(c1: Cluster)(c2: Cluster) = Set(c1.point(0), c2.point(0)).map(apply).size == 1
 
-  def allClusters = allPoints.flatMap(clustersFor).toSet
+  def allClusters: Set[Cluster] = allPoints.flatMap(clustersFor).toSet
 
-  def oneColorClusters = allClusters.filter(_.points.map(apply).toSet.size == 1)
+  def oneColorClusters: Set[Cluster] = allClusters.filter(_.points.map(apply).toSet.size == 1)
 
-  def oneColorMaxCluster = Stream.iterate(oneColorClusters){ clusters =>
+  def oneColorMaxCluster: Option[Cluster] = Stream.iterate(oneColorClusters){ clusters =>
     clusters.flatMap(c => clusters.view filter(sameColor(c)) find(c isCommon) map(c join))
   }.takeWhile(_.size > 0).lastOption.flatMap(_.toSeq.sortWith(_.size > _.size).headOption)
 
@@ -53,12 +54,12 @@ class HexicTable(val rows: Int, val columns: Int, numOfColors: Int) {
 
 }
 
-class HexicTableRotation(override val table: Array[Array[Int]], numOfColors: Int, val rotatedCluster: Cluster, n: Int)
+class HexicTableRotation(override val table: Array[Array[Int]], numOfColors: Int, val rotatedCluster: Cluster, shift: Int)
   extends HexicTable(table.length, table(0).length, numOfColors){
 
   def insteadOf(point: Point) = if (!rotatedCluster.contains(point)) point else {
     val pointIndex = rotatedCluster.points.toSeq.indexOf(point)
-    rotatedCluster.point((pointIndex + n) % rotatedCluster.size)
+    rotatedCluster.point((pointIndex + shift) % rotatedCluster.size)
   }
 
   override def apply(row: Int, column: Int): Int = {
@@ -78,13 +79,13 @@ case class Point(row: Int, column: Int){
    */
   lazy val isOdd = column % 2 == 0
 
-  def neighborRows = (row - 1 to row + 1)
+  def neighborRows = (row - 1 to row + 1).toSet
 
-  def neighborColumns(r: Int) = if (r == row) Seq(column - 1, column + 1)
-  else if (r == row + 1 && isOdd || r == row - 1 && !isOdd) Seq(column)
-  else (column - 1 to column + 1)
+  def neighborColumns(r: Int) = if (r == row) Set(column - 1, column + 1)
+  else if (r == row + 1 && isOdd || r == row - 1 && !isOdd) Set(column)
+  else (column - 1 to column + 1).toSet
 
-  def neighbors = for {
+  def neighbors: Set[Point] = for {
     r <- neighborRows
     c <- neighborColumns(r)
   } yield Point(r, c)
@@ -97,13 +98,13 @@ case class Cluster(points: Set[Point]){
 
   def isCommon(c: Cluster) = c != this && c.points.filter(points.contains).size > 1
 
-  def contains(point: Point) = points.contains(point)
+  def contains(point: Point) = points contains point
 
   def join(c: Cluster) = Cluster(points ++ c.points)
 
   def size = points.size
 
-  def without(point: Point) = Cluster(points.filter(p => !Seq(point).contains(p)))
+  def without(point: Point) = Cluster(points filterNot Seq(point).contains)
 
   def point(n: Int) = points.toSeq(n)
 
