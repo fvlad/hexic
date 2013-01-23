@@ -58,7 +58,7 @@ class HexicTableRotation(override val table: Array[Array[Int]], numOfColors: Int
 
   def insteadOf(point: Point) = if (!rotatedCluster.contains(point)) point else {
     val pointIndex = rotatedCluster.points.toSeq.indexOf(point)
-    rotatedCluster.point((pointIndex + n) % 3)
+    rotatedCluster.point((pointIndex + n) % rotatedCluster.size)
   }
 
   override def apply(row: Int, column: Int): Int = {
