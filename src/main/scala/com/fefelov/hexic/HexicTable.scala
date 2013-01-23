@@ -14,7 +14,6 @@ class HexicTable(val rows: Int, val columns: Int, numOfColors: Int) {
 
   val rand = new Random()
 
-//  val table = Array.tabulate[Int](rows, columns)((_, _) => 0)
   val table = Array.tabulate[Int](rows, columns)((_, _) => rand.nextInt(numOfColors))
 
   def apply(row: Int, column: Int): Int = table(row - 1)(column - 1)
