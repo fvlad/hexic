@@ -14,6 +14,7 @@ class HexicTable(val rows: Int, val columns: Int, numOfColors: Int) {
 
   val rand = new Random()
 
+//  val table = Array.tabulate[Int](rows, columns)((_, _) => 0)
   val table = Array.tabulate[Int](rows, columns)((_, _) => rand.nextInt(numOfColors))
 
   def apply(row: Int, column: Int): Int = table(row - 1)(column - 1)
@@ -36,15 +37,35 @@ class HexicTable(val rows: Int, val columns: Int, numOfColors: Int) {
     } yield Cluster(Set(point, neighbor, neighborOfNeighbor))).toSet
   }
 
-  def sameColor(c1: Cluster)(c2: Cluster) = Set(c1.point, c2.point).map(apply).size == 1
+  def sameColor(c1: Cluster)(c2: Cluster) = Set(c1.point(0), c2.point(0)).map(apply).size == 1
 
   def allClusters = allPoints.flatMap(clustersFor).toSet
 
   def oneColorClusters = allClusters.filter(_.points.map(apply).toSet.size == 1)
 
-  def oneColorMaxClusters: Option[Cluster] = Stream.iterate(oneColorClusters){ clusters =>
-    (for (c1 <- clusters; c2 <- clusters if (c1 != c2)) yield c1 join c2).flatten.toSet
+  def oneColorMaxCluster = Stream.iterate(oneColorClusters){ clusters =>
+    clusters.flatMap(c => clusters.view filter(sameColor(c)) find(c isCommon) map(c join))
   }.takeWhile(_.size > 0).lastOption.flatMap(_.toSeq.sortWith(_.size > _.size).headOption)
+
+  def rotations = allClusters.flatMap(c => Seq(1, 2).map(i => new HexicTableRotation(table, numOfColors, c, i)))
+
+  def bestRotation = rotations.map(r => (r.oneColorMaxCluster.map(_.size).getOrElse(0), r.rotatedCluster))
+    .reduceLeft((a, b) => if (a._1 > b._1) a else b)
+
+}
+
+class HexicTableRotation(override val table: Array[Array[Int]], numOfColors: Int, val rotatedCluster: Cluster, n: Int)
+  extends HexicTable(table.length, table(0).length, numOfColors){
+
+  def insteadOf(point: Point) = if (!rotatedCluster.contains(point)) point else {
+    val pointIndex = rotatedCluster.points.toSeq.indexOf(point)
+    rotatedCluster.point((pointIndex + n) % 3)
+  }
+
+  override def apply(row: Int, column: Int): Int = {
+    val point = insteadOf(Point(row, column))
+    super.apply(point.row, point.column)
+  }
 
 }
 
@@ -75,14 +96,16 @@ case class Point(row: Int, column: Int){
 
 case class Cluster(points: Set[Point]){
 
-  def isCommon(cluster: Cluster) = cluster.points.filter(points.contains).size > 1
+  def isCommon(c: Cluster) = c != this && c.points.filter(points.contains).size > 1
 
-  def contains(cluster: Cluster) = cluster.points.filter(points.contains).size == cluster.points.size
+  def contains(point: Point) = points.contains(point)
 
-  def join(cluster: Cluster) = if (isCommon(cluster)) Some(Cluster(points ++ cluster.points)) else None
+  def join(c: Cluster) = Cluster(points ++ c.points)
 
   def size = points.size
 
-  def point = points.headOption.get
+  def without(point: Point) = Cluster(points.filter(p => !Seq(point).contains(p)))
+
+  def point(n: Int) = points.toSeq(n)
 
 }

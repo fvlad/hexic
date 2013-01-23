@@ -9,8 +9,11 @@ package com.fefelov.hexic
 class HexicGame {
 
   def launch(){
-    val table = new HexicTable(20, 20, 2)
+    val table = new HexicTable(4, 4, 2)
     draw(table)
+
+    println(table.bestRotation)
+
   }
 
   def draw(table: HexicTable) {
