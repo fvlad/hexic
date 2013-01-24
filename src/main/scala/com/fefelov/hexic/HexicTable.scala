@@ -83,11 +83,11 @@ case class Point(row: Int, column: Int){
    */
   lazy val isOdd = column % 2 == 0
 
-  def neighborRows = (row - 1 to row + 1).toSet
+  def neighborRows = Set(row - 1, row, row + 1)
 
   def neighborColumns(r: Int) = if (r == row) Set(column - 1, column + 1)
   else if (r == row + 1 && isOdd || r == row - 1 && !isOdd) Set(column)
-  else (column - 1 to column + 1).toSet
+  else Set(column - 1, column, column + 1)
 
   def neighbors: Set[Point] = for {
     r <- neighborRows
