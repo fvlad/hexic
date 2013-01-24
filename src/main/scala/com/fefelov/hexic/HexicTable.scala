@@ -42,7 +42,9 @@ class HexicTable(val rows: Int, val columns: Int, numOfColors: Int) { hexicTable
 
   lazy val allClusters: Set[Cluster] = allPoints.flatMap(clustersFor).toSet
 
-  def oneColorClusters: Set[Cluster] = allClusters.filter(_.points.map(apply).toSet.size == 1)
+  def oneColor(cluster: Cluster) = cluster.points.map(apply).toSet.size == 1
+
+  def oneColorClusters: Set[Cluster] = allClusters filter oneColor
 
   def oneColorMaxCluster: Option[Cluster] = Stream.iterate(oneColorClusters){ clusters =>
     clusters.flatMap(c => clusters.view filter (sameColor(c)) find (c isCommon) map (c join))
