@@ -2,6 +2,7 @@ package com.fefelov.hexic
 
 import util.Random
 import collection.GenTraversableOnce
+import collection.immutable.IndexedSeq
 
 /**
  * Created with IntelliJ IDEA.
@@ -10,12 +11,12 @@ import collection.GenTraversableOnce
  * Time: 10:25 PM
  */
 
-class HexicTable(val rows: Int, val columns: Int, numOfColors: Int) {
+class HexicTable(val rows: Int, val columns: Int, numOfColors: Int) { hexicTable =>
 
-  val rand = new Random()
+  lazy val rand = new Random()
 
   //TODO: make sure there are no one color clusters right after init
-  val table = Array.tabulate[Int](rows, columns)((_, _) => rand.nextInt(numOfColors))
+  lazy val table = Array.tabulate[Int](rows, columns)((_, _) => rand.nextInt(numOfColors))
 
   def apply(row: Int, column: Int): Int = table(row - 1)(column - 1)
 
@@ -39,33 +40,36 @@ class HexicTable(val rows: Int, val columns: Int, numOfColors: Int) {
 
   def sameColor(c1: Cluster)(c2: Cluster) = Set(c1.point(0), c2.point(0)).map(apply).size == 1
 
-  def allClusters: Set[Cluster] = allPoints.flatMap(clustersFor).toSet
+  lazy val allClusters: Set[Cluster] = allPoints.flatMap(clustersFor).toSet
 
   def oneColorClusters: Set[Cluster] = allClusters.filter(_.points.map(apply).toSet.size == 1)
 
   def oneColorMaxCluster: Option[Cluster] = Stream.iterate(oneColorClusters){ clusters =>
-    clusters.flatMap(c => clusters.view filter(sameColor(c)) find(c isCommon) map(c join))
+    clusters.flatMap(c => clusters.view filter (sameColor(c)) find (c isCommon) map (c join))
   }.takeWhile(_.size > 0).lastOption.flatMap(_.toSeq.sortWith(_.size > _.size).headOption)
 
-  def rotations = allClusters.flatMap(c => Seq(1, 2).map(i => new HexicTableRotation(table, numOfColors, c, i)))
+  case class Rotation(rotatedCluster: Cluster, shift: Int)
+    extends HexicTable(rows, columns, numOfColors){
 
-  def bestRotation = rotations.map(r => (r.oneColorMaxCluster.map(_.size).getOrElse(0), r.rotatedCluster))
+    override lazy val table: Array[Array[Int]] = hexicTable.table
+
+    override lazy val allClusters: Set[Cluster] = hexicTable.allClusters
+
+    def checkRotated(point: Point) = if (!rotatedCluster.contains(point)) point else {
+      val pointIndex = rotatedCluster.points.toSeq.indexOf(point)
+      rotatedCluster.point((pointIndex + shift) % rotatedCluster.size)
+    }
+
+    override def apply(row: Int, column: Int): Int = {
+      val point = checkRotated(Point(row, column))
+      super.apply(point.row, point.column)
+    }
+  }
+
+  def rotations = for (cluster <- allClusters; shift <- Seq(1, 2)) yield Rotation(cluster, shift)
+
+  def bestRotation = rotations.map(r => (r.oneColorMaxCluster.map(_.size).getOrElse(0), r))
     .reduceLeft((a, b) => if (a._1 > b._1) a else b)
-
-}
-
-class HexicTableRotation(override val table: Array[Array[Int]], numOfColors: Int, val rotatedCluster: Cluster, shift: Int)
-  extends HexicTable(table.length, table(0).length, numOfColors){
-
-  def insteadOf(point: Point) = if (!rotatedCluster.contains(point)) point else {
-    val pointIndex = rotatedCluster.points.toSeq.indexOf(point)
-    rotatedCluster.point((pointIndex + shift) % rotatedCluster.size)
-  }
-
-  override def apply(row: Int, column: Int): Int = {
-    val point = insteadOf(Point(row, column))
-    super.apply(point.row, point.column)
-  }
 
 }
 
